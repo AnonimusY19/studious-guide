@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Piano inclinato e attrito</title>
+
+  <!-- CSS del simulatore -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <canvas id="sim-canvas" onclick="handleClick(event)"></canvas>
+
+    <div class="env-bar">
+      <span>Ambiente</span>
+      <span>-</span>
+      <span>Gravit&agrave;:</span>
+
+      <input
+        type="range"
+        id="g-slider"
+        min="1"
+        max="25"
+        value="9.81"
+        step="0.01"
+        style="width:90px"
+        oninput="syncFrom('g-slider','g-num',1,25,2); redraw()">
+
+      <input
+        type="number"
+        id="g-num"
+        class="prop-num"
+        value="9.81"
+        min="1"
+        max="25"
+        step="0.01"
+        onchange="syncFrom('g-num','g-slider',1,25,2); redraw()">
+
+      <span class="prop-unit">m/s<sup>2</sup></span>
+    </div>
+
+    <!-- PANELLO PIANO -->
+
+    <div class="panel" id="panel-plane">
+
+      <div class="panel-header">
+        <span class="panel-title">Piano inclinato</span>
+
+        <button
+          class="panel-close"
+          onclick="closePanel('plane')">
+          Chiudi ×
+        </button>
+      </div>
+
+      <div class="prop-grid">
+
+        <div class="prop-group">
+
+          <div class="prop-label">
+            Angolo (θ)
+          </div>
+
+          <div class="slider-row">
+            <input
+              type="range"
+              id="angle-slider"
+              min="0"
+              max="75"
+              value="30"
+              step="1"
+              oninput="syncFrom('angle-slider','angle-num',0,75,1); redraw()">
+          </div>
+
+          <div class="num-row">
+            <input
+              type="number"
+              id="angle-num"
+              class="prop-num"
+              value="30"
+              min="0"
+              max="75"
+              step="1"
+              onchange="syncFrom('angle-num','angle-slider',0,75,1); redraw()">
+
+            <span class="prop-unit">°</span>
+          </div>
+
+        </div>
+
+        <div class="prop-group">
+
+          <div class="prop-label">
+            Coeff. attrito (μ)
+          </div>
+
+          <div class="slider-row">
+            <input
+              type="range"
+              id="mu-slider"
+              min="0"
+              max="1"
+              value="0.30"
+              step="0.01"
+              oninput="syncFrom('mu-slider','mu-num',0,1,2); redraw()">
+          </div>
+
+          <div class="num-row">
+            <input
+              type="number"
+              id="mu-num"
+              class="prop-num"
+              value="0.30"
+              min="0"
+              max="1"
+              step="0.01"
+              onchange="syncFrom('mu-num','mu-slider',0,1,2); redraw()">
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PANELLO OGGETTO -->
+
+    <div class="panel" id="panel-obj">
+
+      <div class="panel-header">
+        <span class="panel-title">Oggetto</span>
+
+        <button
+          class="panel-close"
+          onclick="closePanel('obj')">
+          Chiudi ×
+        </button>
+      </div>
+
+      <div class="prop-grid">
+
+        <div class="prop-group">
+
+          <div class="prop-label">
+            Massa (kg)
+          </div>
+
+          <div class="slider-row">
+            <input
+              type="range"
+              id="mass-slider"
+              min="0.1"
+              max="100"
+              value="5"
+              step="0.1"
+              oninput="syncFrom('mass-slider','mass-num',0.1,100,2); redraw()">
+          </div>
+
+          <div class="num-row">
+            <input
+              type="number"
+              id="mass-num"
+              class="prop-num"
+              value="5.00"
+              min="0.1"
+              max="100"
+              step="0.1"
+              onchange="syncFrom('mass-num','mass-slider',0.1,100,2); redraw()">
+
+            <span class="prop-unit">kg</span>
+          </div>
+
+        </div>
+
+        <div class="prop-group">
+
+          <div class="prop-label">
+            Forma
+          </div>
+
+          <div class="shape-btns" style="margin-top:4px">
+
+            <button
+              class="shape-btn active"
+              onclick="setShape('cube',this)">
+              Cubo
+            </button>
+
+            <button
+              class="shape-btn"
+              onclick="setShape('sphere',this)">
+              Sfera
+            </button>
+
+            <button
+              class="shape-btn"
+              onclick="setShape('cylinder',this)">
+              Cilindro
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FORZE -->
+
+      <div class="forces-section">
+
+        <div class="forces-title">
+          Forze in gioco
+        </div>
+
+        <div class="force-row">
+          <div class="force-dot" style="background:#E24B4A"></div>
+
+          <span class="force-name">Peso (Fg)</span>
+
+          <span class="force-val" id="f-fg">—</span>
+
+          <div class="force-bar-wrap">
+            <div
+              class="force-bar"
+              id="b-fg"
+              style="background:#E24B4A">
+            </div>
+          </div>
+        </div>
+
+        <div class="force-row">
+          <div class="force-dot" style="background:#378ADD"></div>
+
+          <span class="force-name">Normale (N)</span>
+
+          <span class="force-val" id="f-fn">—</span>
+
+          <div class="force-bar-wrap">
+            <div
+              class="force-bar"
+              id="b-fn"
+              style="background:#378ADD">
+            </div>
+          </div>
+        </div>
+
+        <div class="force-row">
+          <div class="force-dot" style="background:#1D9E75"></div>
+
+          <span class="force-name">Attrito (Ff)</span>
+
+          <span class="force-val" id="f-ff">—</span>
+
+          <div class="force-bar-wrap">
+            <div
+              class="force-bar"
+              id="b-ff"
+              style="background:#1D9E75">
+            </div>
+          </div>
+        </div>
+
+        <div class="force-row">
+          <div class="force-dot" style="background:#EF9F27"></div>
+
+          <span class="force-name">Risultante (Fr)</span>
+
+          <span class="force-val" id="f-fr">—</span>
+
+          <div class="force-bar-wrap">
+            <div
+              class="force-bar"
+              id="b-fr"
+              style="background:#EF9F27">
+            </div>
+          </div>
+        </div>
+
+        <div class="status-line">
+
+          <span style="font-size:12px;color:var(--color-text-secondary)">
+            Stato:
+          </span>
+
+          <span class="badge" id="status-badge">
+            —
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <p class="hint" id="hint-text">
+      Clicca sul piano o sull'oggetto per vederne le propriet&agrave;
+    </p>
+
+  </div>
+
+  <!-- JS del simulatore -->
+  <script src="js/script.js"></script>
+
+</body>
+</html>
