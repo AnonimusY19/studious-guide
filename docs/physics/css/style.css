@@ -1,3 +1,28 @@
+  :root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f3f4f6;
+  --color-background-danger: #fee2e2;
+  --color-background-success: #dcfce7;
+  --color-background-warning: #fef3c7;
+  --color-background-info: #e0e7ff;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-danger: #b91c1c;
+  --color-text-success: #166534;
+  --color-text-warning: #92400e;
+  --color-text-info: #3730a3;
+
+  --color-border-primary: #d1d5db;
+  --color-border-secondary: #e5e7eb;
+  --color-border-tertiary: #f3f4f6;
+  --color-border-info: #a5b4fc;
+
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+  
+  
   * { box-sizing: border-box; }
   .wrap { padding: 1rem 0; font-family: "Anthropic Sans", sans-serif; }
   #sim-canvas { width: 100%; height: 340px; border-radius: var(--border-radius-lg); display: block; cursor: pointer; }
