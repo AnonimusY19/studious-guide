@@ -15,7 +15,7 @@
 
   <div class="wrap">
 
-    <canvas id="sim-canvas" onclick="handleClick(event)"></canvas>
+    <canvas id="sim-canvas"></canvas>
 
     <div class="env-bar">
       <span>Ambiente</span>
@@ -30,7 +30,7 @@
         value="9.81"
         step="0.01"
         style="width:90px"
-        oninput="syncFrom('g-slider','g-num',1,25,2); redraw()">
+        oninput="onGravChange()">
 
       <input
         type="number"
@@ -40,12 +40,12 @@
         min="1"
         max="25"
         step="0.01"
-        onchange="syncFrom('g-num','g-slider',1,25,2); redraw()">
+        onchange="onGravChange()">
 
       <span class="prop-unit">m/s<sup>2</sup></span>
     </div>
 
-    <!-- PANELLO PIANO -->
+    <!-- PANNELLO PIANO -->
 
     <div class="panel" id="panel-plane">
 
@@ -54,7 +54,7 @@
 
         <button
           class="panel-close"
-          onclick="closePanel('plane')">
+          onclick="closePanelBtn('plane')">
           Chiudi ×
         </button>
       </div>
@@ -75,7 +75,7 @@
               max="75"
               value="30"
               step="1"
-              oninput="syncFrom('angle-slider','angle-num',0,75,1); redraw()">
+              oninput="onAngleChange()">
           </div>
 
           <div class="num-row">
@@ -87,7 +87,7 @@
               min="0"
               max="75"
               step="1"
-              onchange="syncFrom('angle-num','angle-slider',0,75,1); redraw()">
+              onchange="onAngleChange()">
 
             <span class="prop-unit">°</span>
           </div>
@@ -108,7 +108,7 @@
               max="1"
               value="0.30"
               step="0.01"
-              oninput="syncFrom('mu-slider','mu-num',0,1,2); redraw()">
+              oninput="onMuChange()">
           </div>
 
           <div class="num-row">
@@ -120,7 +120,7 @@
               min="0"
               max="1"
               step="0.01"
-              onchange="syncFrom('mu-num','mu-slider',0,1,2); redraw()">
+              onchange="onMuChange()">
           </div>
 
         </div>
@@ -128,7 +128,7 @@
       </div>
     </div>
 
-    <!-- PANELLO OGGETTO -->
+    <!-- PANNELLO OGGETTO -->
 
     <div class="panel" id="panel-obj">
 
@@ -137,7 +137,7 @@
 
         <button
           class="panel-close"
-          onclick="closePanel('obj')">
+          onclick="closePanelBtn('obj')">
           Chiudi ×
         </button>
       </div>
@@ -158,7 +158,7 @@
               max="100"
               value="5"
               step="0.1"
-              oninput="syncFrom('mass-slider','mass-num',0.1,100,2); redraw()">
+              oninput="onMassChange()">
           </div>
 
           <div class="num-row">
@@ -170,7 +170,7 @@
               min="0.1"
               max="100"
               step="0.1"
-              onchange="syncFrom('mass-num','mass-slider',0.1,100,2); redraw()">
+              onchange="onMassChange()">
 
             <span class="prop-unit">kg</span>
           </div>
@@ -218,78 +218,43 @@
 
         <div class="force-row">
           <div class="force-dot" style="background:#E24B4A"></div>
-
           <span class="force-name">Peso (Fg)</span>
-
           <span class="force-val" id="f-fg">—</span>
-
           <div class="force-bar-wrap">
-            <div
-              class="force-bar"
-              id="b-fg"
-              style="background:#E24B4A">
-            </div>
+            <div class="force-bar" id="b-fg" style="background:#E24B4A"></div>
           </div>
         </div>
 
         <div class="force-row">
           <div class="force-dot" style="background:#378ADD"></div>
-
           <span class="force-name">Normale (N)</span>
-
           <span class="force-val" id="f-fn">—</span>
-
           <div class="force-bar-wrap">
-            <div
-              class="force-bar"
-              id="b-fn"
-              style="background:#378ADD">
-            </div>
+            <div class="force-bar" id="b-fn" style="background:#378ADD"></div>
           </div>
         </div>
 
         <div class="force-row">
           <div class="force-dot" style="background:#1D9E75"></div>
-
           <span class="force-name">Attrito (Ff)</span>
-
           <span class="force-val" id="f-ff">—</span>
-
           <div class="force-bar-wrap">
-            <div
-              class="force-bar"
-              id="b-ff"
-              style="background:#1D9E75">
-            </div>
+            <div class="force-bar" id="b-ff" style="background:#1D9E75"></div>
           </div>
         </div>
 
         <div class="force-row">
           <div class="force-dot" style="background:#EF9F27"></div>
-
           <span class="force-name">Risultante (Fr)</span>
-
           <span class="force-val" id="f-fr">—</span>
-
           <div class="force-bar-wrap">
-            <div
-              class="force-bar"
-              id="b-fr"
-              style="background:#EF9F27">
-            </div>
+            <div class="force-bar" id="b-fr" style="background:#EF9F27"></div>
           </div>
         </div>
 
         <div class="status-line">
-
-          <span style="font-size:12px;color:var(--color-text-secondary)">
-            Stato:
-          </span>
-
-          <span class="badge" id="status-badge">
-            —
-          </span>
-
+          <span style="font-size:12px;color:var(--color-text-secondary)">Stato:</span>
+          <span class="badge" id="status-badge">—</span>
         </div>
 
       </div>
@@ -303,7 +268,7 @@
   </div>
 
   <!-- JS del simulatore -->
-  <script src="js/script.js"></script>
+  <script type="module" src="js/main.js"></script>
 
 </body>
 </html>
