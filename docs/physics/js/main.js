@@ -1,7 +1,7 @@
 // Orchestratore principale.
 
-import { state }            from './state.js';
-import { computePhysics }   from './physics.js';
+import { state }                from './state.js';
+import { computePhysics }       from './physics.js';
 import { initRenderer, render } from './render.js';
 import { updateForceDisplay }   from './ui.js';
 import { initInput }            from './input.js';
@@ -30,19 +30,29 @@ window.addEventListener('DOMContentLoaded', () => {
 
   initRenderer(canvas, ctx);
 
-  // initInput registra il click sul canvas e restituisce i callback
-  // da esporre su window, già "chiusi" sulla redraw corretta.
-  const { setShape, closePanelBtn,
-          onAngleChange, onMuChange,
-          onMassChange, onGravChange } = initInput(canvas, redraw);
+  const {
+    setShape,
+    closePanelBtn,
+    onAngleSlider,
+    onAngleNumber,
+    onMuSlider,
+    onMuNumber,
+    onMassSlider,
+    onMassNumber,
+    onGravSlider,
+    onGravNumber,
+  } = initInput(canvas, redraw);
 
-  // Esponi su window per i callback inline dell'HTML
   window.setShape      = setShape;
   window.closePanelBtn = closePanelBtn;
-  window.onAngleChange = onAngleChange;
-  window.onMuChange    = onMuChange;
-  window.onMassChange  = onMassChange;
-  window.onGravChange  = onGravChange;
+  window.onAngleSlider = onAngleSlider;
+  window.onAngleNumber = onAngleNumber;
+  window.onMuSlider    = onMuSlider;
+  window.onMuNumber    = onMuNumber;
+  window.onMassSlider  = onMassSlider;
+  window.onMassNumber  = onMassNumber;
+  window.onGravSlider  = onGravSlider;
+  window.onGravNumber  = onGravNumber;
 
   resizeCanvas();
   window.addEventListener('resize', () => { resizeCanvas(); redraw(); });

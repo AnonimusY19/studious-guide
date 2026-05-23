@@ -1,8 +1,8 @@
 // Gestione eventi utente.
 
-import { state }                        from './state.js';
+import { state } from './state.js';
 import { openPanel, closePanel, getVal, syncFrom } from './ui.js';
-import { pointInCircle, pointInQuad }   from './utils.js';
+import { pointInCircle, pointInQuad } from './utils.js';
 
 /**
  * Inizializza gli eventi sul canvas.
@@ -12,58 +12,160 @@ export function initInput(canvas, redraw) {
 
   // --- Click sul canvas ---
   canvas.addEventListener('click', (e) => {
+
     const rect = canvas.getBoundingClientRect();
     const dpr  = window.devicePixelRatio || 1;
-    const sx   = (canvas.width / dpr) / rect.width;
-    const sy   = (canvas.height / dpr) / rect.height;
-    const mx   = (e.clientX - rect.left) * sx;
-    const my   = (e.clientY - rect.top)  * sy;
+
+    const sx = (canvas.width / dpr) / rect.width;
+    const sy = (canvas.height / dpr) / rect.height;
+
+    const mx = (e.clientX - rect.left) * sx;
+    const my = (e.clientY - rect.top) * sy;
 
     if (state.objRegion && pointInCircle(mx, my, state.objRegion)) {
-      openPanel('obj'); redraw(); return;
+      openPanel('obj');
+      redraw();
+      return;
     }
+
     if (state.planeRegion && pointInQuad(mx, my, state.planeRegion)) {
-      openPanel('plane'); redraw(); return;
+      openPanel('plane');
+      redraw();
+      return;
     }
   });
 
-  // --- Callback da esporre su window ---
+  // =========================
+  // SHAPE
+  // =========================
 
   function setShape(s, btn) {
+
     state.shape = s;
-    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+
+    document
+      .querySelectorAll('.shape-btn')
+      .forEach(b => b.classList.remove('active'));
+
     btn.classList.add('active');
+
     redraw();
   }
+
+  // =========================
+  // CLOSE PANEL
+  // =========================
 
   function closePanelBtn(which) {
+
     closePanel(which);
+
     redraw();
   }
 
-  function onAngleChange() {
+  // =========================
+  // ANGLE
+  // =========================
+
+  function onAngleSlider() {
+
     syncFrom('angle-slider', 'angle-num', 0, 75, 1);
+
     state.theta = getVal('angle-slider');
+
     redraw();
   }
 
-  function onMuChange() {
+  function onAngleNumber() {
+
+    syncFrom('angle-num', 'angle-slider', 0, 75, 1);
+
+    state.theta = getVal('angle-num');
+
+    redraw();
+  }
+
+  // =========================
+  // MU
+  // =========================
+
+  function onMuSlider() {
+
     syncFrom('mu-slider', 'mu-num', 0, 1, 2);
+
     state.mu = getVal('mu-slider');
+
     redraw();
   }
 
-  function onMassChange() {
+  function onMuNumber() {
+
+    syncFrom('mu-num', 'mu-slider', 0, 1, 2);
+
+    state.mu = getVal('mu-num');
+
+    redraw();
+  }
+
+  // =========================
+  // MASS
+  // =========================
+
+  function onMassSlider() {
+
     syncFrom('mass-slider', 'mass-num', 0.1, 100, 2);
+
     state.mass = getVal('mass-slider');
+
     redraw();
   }
 
-  function onGravChange() {
+  function onMassNumber() {
+
+    syncFrom('mass-num', 'mass-slider', 0.1, 100, 2);
+
+    state.mass = getVal('mass-num');
+
+    redraw();
+  }
+
+  // =========================
+  // GRAVITY
+  // =========================
+
+  function onGravSlider() {
+
     syncFrom('g-slider', 'g-num', 1, 25, 2);
+
     state.grav = getVal('g-slider');
+
     redraw();
   }
 
-  return { setShape, closePanelBtn, onAngleChange, onMuChange, onMassChange, onGravChange };
+  function onGravNumber() {
+
+    syncFrom('g-num', 'g-slider', 1, 25, 2);
+
+    state.grav = getVal('g-num');
+
+    redraw();
+  }
+
+  return {
+
+    setShape,
+    closePanelBtn,
+
+    onAngleSlider,
+    onAngleNumber,
+
+    onMuSlider,
+    onMuNumber,
+
+    onMassSlider,
+    onMassNumber,
+
+    onGravSlider,
+    onGravNumber
+  };
 }
