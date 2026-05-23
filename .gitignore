@@ -2,3 +2,5 @@ node_modules/
 docs/vendor/
 !docs/vendor/.gitkeep
 post-create-command.sh.log
+docs/physics/cert.pem
+docs/physics/key.pem
