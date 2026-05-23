@@ -1,3 +1,5 @@
 node_modules/
 docs/vendor/
 post-create-command.sh.log
+docs/physics/cert.pem
+docs/physics/key.pem
