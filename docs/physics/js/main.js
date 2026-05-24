@@ -1,47 +1,45 @@
-// Orchestratore principale.
+// Orchestratore principale — versione 3D.
 
-import { state }                from './state.js';
-import { computePhysics }       from './physics.js';
-import { initRenderer, render } from './render.js';
-import { updateForceDisplay }   from './ui.js';
-import { initInput }            from './input.js';
+import { state }              from './state.js';
+import { computePhysics }     from './physics.js';
+import { updateForceDisplay } from './ui.js';
+import { initInput }          from './input.js';
+import { initScene, getScene, getCamera, getRenderer, getControls } from './scene.js';
+import { buildScene, updateScene } from './render3d.js';
 
 window.addEventListener('DOMContentLoaded', () => {
 
   const canvas = document.getElementById('sim-canvas');
-  const ctx    = canvas.getContext('2d');
 
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
+  // --- Init Three.js ---
+  initScene(canvas);
+  buildScene();
 
-  function resizeCanvas() {
-    const dpr  = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width  = rect.width  * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  function redraw() {
+  // --- Funzione update (chiamata dagli input) ---
+  function update() {
     const physics = computePhysics(state.theta, state.mu, state.mass, state.grav);
     updateForceDisplay(physics);
-    render(physics);
+    updateScene(physics);
   }
 
-  initRenderer(canvas, ctx);
+  // --- Render loop continuo ---
+  function loop() {
+    requestAnimationFrame(loop);
+    getControls().update();  // damping OrbitControls
+    update();
+    getRenderer().render(getScene(), getCamera());
+  }
+  loop();
 
+  // --- Input ---
   const {
     setShape,
     closePanelBtn,
-    onAngleSlider,
-    onAngleNumber,
-    onMuSlider,
-    onMuNumber,
-    onMassSlider,
-    onMassNumber,
-    onGravSlider,
-    onGravNumber,
-  } = initInput(canvas, redraw);
+    onAngleSlider, onAngleNumber,
+    onMuSlider,    onMuNumber,
+    onMassSlider,  onMassNumber,
+    onGravSlider,  onGravNumber,
+  } = initInput(canvas, update);
 
   window.setShape      = setShape;
   window.closePanelBtn = closePanelBtn;
@@ -53,10 +51,4 @@ window.addEventListener('DOMContentLoaded', () => {
   window.onMassNumber  = onMassNumber;
   window.onGravSlider  = onGravSlider;
   window.onGravNumber  = onGravNumber;
-
-  resizeCanvas();
-  window.addEventListener('resize', () => { resizeCanvas(); redraw(); });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
-
-  redraw();
 });
