@@ -1,65 +1,14 @@
-// Gestione eventi utente — versione 3D.
+// Gestione eventi utente — versione 3D fullscreen.
+// Niente più raycasting: la selezione avviene tramite il menu overlay.
 
-import * as THREE from 'three';
 import { state } from './state.js';
-import { openPanel, closePanel, getVal, syncFrom } from './ui.js';
-import { getCamera } from './scene.js';
-import { getClickTargets } from './render3d.js';
-
-const raycaster = new THREE.Raycaster();
-const pointer   = new THREE.Vector2();
+import { getVal, syncFrom } from './ui.js';
 
 export function initInput(canvas, redraw) {
-
-  let downX = 0, downY = 0;
-
-  canvas.addEventListener('pointerdown', (e) => {
-    downX = e.clientX;
-    downY = e.clientY;
-  });
-
-  canvas.addEventListener('pointerup', (e) => {
-    const dx   = e.clientX - downX;
-    const dy   = e.clientY - downY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if (dist > 5) return;
-
-    const rect = canvas.getBoundingClientRect();
-    pointer.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-    pointer.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(pointer, getCamera());
-
-    const targets = getClickTargets();
-    console.log('[input] targets:', targets.map(t => t?.userData));
-
-    // intersectObjects con recursive:true per trovare anche figli del pivotGroup
-    const hits = raycaster.intersectObjects(targets, true);
-    console.log('[input] hits:', hits.length, hits.map(h => h.object?.userData));
-
-    if (hits.length === 0) return;
-
-    // Risali la gerarchia finché trovi un nodo con userData.type
-    let obj = hits[0].object;
-    while (obj && !obj.userData.type && obj.parent) {
-      obj = obj.parent;
-    }
-    console.log('[input] tipo rilevato:', obj?.userData?.type);
-
-    if (obj?.userData?.type === 'plane') {
-      openPanel('plane');
-      redraw();
-    } else if (obj?.userData?.type === 'obj') {
-      openPanel('obj');
-      redraw();
-    }
-  });
 
   // =========================
   // SHAPE
   // =========================
-
   function setShape(s, btn) {
     state.shape = s;
     document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
@@ -67,11 +16,9 @@ export function initInput(canvas, redraw) {
     redraw();
   }
 
-  function closePanelBtn(which) {
-    closePanel(which);
-    redraw();
-  }
-
+  // =========================
+  // ANGLE
+  // =========================
   function onAngleSlider() {
     syncFrom('angle-slider', 'angle-num', 0, 75, 1);
     state.theta = getVal('angle-slider');
@@ -84,6 +31,9 @@ export function initInput(canvas, redraw) {
     redraw();
   }
 
+  // =========================
+  // MU
+  // =========================
   function onMuSlider() {
     syncFrom('mu-slider', 'mu-num', 0, 1, 2);
     state.mu = getVal('mu-slider');
@@ -96,6 +46,9 @@ export function initInput(canvas, redraw) {
     redraw();
   }
 
+  // =========================
+  // MASS
+  // =========================
   function onMassSlider() {
     syncFrom('mass-slider', 'mass-num', 0.1, 100, 2);
     state.mass = getVal('mass-slider');
@@ -108,6 +61,9 @@ export function initInput(canvas, redraw) {
     redraw();
   }
 
+  // =========================
+  // GRAVITY
+  // =========================
   function onGravSlider() {
     syncFrom('g-slider', 'g-num', 1, 25, 2);
     state.grav = getVal('g-slider');
@@ -122,7 +78,6 @@ export function initInput(canvas, redraw) {
 
   return {
     setShape,
-    closePanelBtn,
     onAngleSlider, onAngleNumber,
     onMuSlider,    onMuNumber,
     onMassSlider,  onMassNumber,

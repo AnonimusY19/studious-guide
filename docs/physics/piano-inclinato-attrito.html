@@ -1,174 +1,353 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Piano inclinato e attrito</title>
-  <link rel="stylesheet" href="css/style.css">
 
-  <!-- Import map: Three.js + cannon-es da CDN -->
   <script type="importmap">
   {
     "imports": {
-      "three":              "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-      "three/addons/":      "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
-      "cannon-es":          "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+      "three":         "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
+      "cannon-es":     "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
     }
   }
   </script>
-</head>
 
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      overflow: hidden;
+      background: #000;
+      font-family: system-ui, sans-serif;
+    }
+
+    /* Canvas occupa tutta la finestra */
+    #sim-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    /* ================================
+       OVERLAY UI — sopra il canvas
+    ================================ */
+    #ui {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 240px;
+    }
+
+    /* Bottoni del menu a tendina */
+    .menu-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: background .15s;
+      width: 100%;
+      text-align: left;
+    }
+
+    .menu-btn.env   { background: rgba(30,  30,  30,  0.72); }
+    .menu-btn.plane { background: rgba(83, 74, 183, 0.72); }
+    .menu-btn.obj   { background: rgba(30,  90, 160, 0.72); }
+
+    .menu-btn.env:hover   { background: rgba(50,  50,  50,  0.88); }
+    .menu-btn.plane:hover { background: rgba(100, 92, 200, 0.88); }
+    .menu-btn.obj:hover   { background: rgba(40, 110, 190, 0.88); }
+
+    .menu-btn.active { outline: 2px solid rgba(255,255,255,0.5); }
+
+    .chevron {
+      transition: transform .2s;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+    .menu-btn.active .chevron { transform: rotate(180deg); }
+
+    /* Pannelli a tendina */
+    .panel {
+      background: rgba(20, 20, 20, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 10px;
+      border: 0.5px solid rgba(255,255,255,0.12);
+      padding: 14px 16px;
+      display: none;
+      animation: slideDown .15s ease;
+    }
+    .panel.open { display: block; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Prop groups dentro i pannelli */
+    .prop-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .prop-group:last-child { margin-bottom: 0; }
+
+    .prop-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .prop-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type=range] {
+      flex: 1;
+      accent-color: #7F77DD;
+    }
+
+    input[type=number] {
+      width: 64px;
+      background: rgba(255,255,255,0.1);
+      border: 0.5px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 7px;
+      text-align: right;
+    }
+    input[type=number]:focus {
+      outline: none;
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    .prop-unit {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      min-width: 28px;
+    }
+
+    /* Shape buttons */
+    .shape-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .shape-btn {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 0.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .shape-btn.active {
+      background: rgba(127,119,221,0.6);
+      color: #fff;
+      border-color: rgba(127,119,221,0.8);
+    }
+
+    /* Forze nel pannello oggetto */
+    .forces-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 0.5px solid rgba(255,255,255,0.1);
+    }
+    .forces-title {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+    .force-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .force-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .force-name { color: rgba(255,255,255,0.5); min-width: 96px; }
+    .force-val { font-weight: 500; color: #fff; min-width: 52px; }
+    .force-bar-wrap { flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    .force-bar { height: 100%; border-radius: 2px; transition: width .3s; }
+
+    .status-line { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+    .badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+    .badge-slide { background: rgba(185,28,28,0.5);  color: #fca5a5; }
+    .badge-still { background: rgba(21,128,61,0.5);  color: #86efac; }
+    .badge-limit { background: rgba(180,83,9,0.5);   color: #fcd34d; }
+
+    /* Hint */
+    #hint {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+  </style>
+</head>
 <body>
 
-  <div class="wrap">
+  <canvas id="sim-canvas"></canvas>
 
-    <!-- Il canvas è ora gestito da Three.js -->
-    <canvas id="sim-canvas"></canvas>
+  <!-- UI overlay -->
+  <div id="ui">
 
-    <!-- ========================= -->
     <!-- AMBIENTE -->
-    <!-- ========================= -->
-
-    <div class="env-bar">
-      <span>Ambiente</span>
-      <span>-</span>
-      <span>Gravità:</span>
-
-      <input
-        type="range"
-        id="g-slider"
-        min="1" max="25" value="9.81" step="0.01"
-        style="width:90px"
-        oninput="onGravSlider()">
-
-      <input
-        type="number"
-        id="g-num"
-        class="prop-num"
-        value="9.81" min="1" max="25" step="0.01"
-        onchange="onGravNumber()">
-
-      <span class="prop-unit">m/s<sup>2</sup></span>
+    <button class="menu-btn env" onclick="togglePanel('env', this)">
+      🌍 Ambiente
+      <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 5l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="panel" id="panel-env">
+      <div class="prop-group">
+        <div class="prop-label">Gravità</div>
+        <div class="prop-row">
+          <input type="range" id="g-slider" min="1" max="25" value="9.81" step="0.01" oninput="onGravSlider()">
+          <input type="number" id="g-num" value="9.81" min="1" max="25" step="0.01" onchange="onGravNumber()">
+          <span class="prop-unit">m/s²</span>
+        </div>
+      </div>
     </div>
 
-    <!-- ========================= -->
-    <!-- PANNELLO PIANO -->
-    <!-- ========================= -->
-
+    <!-- PIANO -->
+    <button class="menu-btn plane" onclick="togglePanel('plane', this)">
+      📐 Piano inclinato
+      <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 5l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
     <div class="panel" id="panel-plane">
-      <div class="panel-header">
-        <span class="panel-title">Piano inclinato</span>
-        <button class="panel-close" onclick="closePanelBtn('plane')">Chiudi ×</button>
+      <div class="prop-group">
+        <div class="prop-label">Angolo (θ)</div>
+        <div class="prop-row">
+          <input type="range" id="angle-slider" min="0" max="75" value="30" step="1" oninput="onAngleSlider()">
+          <input type="number" id="angle-num" value="30" min="0" max="75" step="1" onchange="onAngleNumber()">
+          <span class="prop-unit">°</span>
+        </div>
       </div>
-
-      <div class="prop-grid">
-
-        <div class="prop-group">
-          <div class="prop-label">Angolo (θ)</div>
-          <div class="slider-row">
-            <input type="range" id="angle-slider" min="0" max="75" value="30" step="1" oninput="onAngleSlider()">
-          </div>
-          <div class="num-row">
-            <input type="number" id="angle-num" class="prop-num" value="30" min="0" max="75" step="1" onchange="onAngleNumber()">
-            <span class="prop-unit">°</span>
-          </div>
+      <div class="prop-group">
+        <div class="prop-label">Coeff. attrito (μ)</div>
+        <div class="prop-row">
+          <input type="range" id="mu-slider" min="0" max="1" value="0.30" step="0.01" oninput="onMuSlider()">
+          <input type="number" id="mu-num" value="0.30" min="0" max="1" step="0.01" onchange="onMuNumber()">
         </div>
-
-        <div class="prop-group">
-          <div class="prop-label">Coeff. attrito (μ)</div>
-          <div class="slider-row">
-            <input type="range" id="mu-slider" min="0" max="1" value="0.30" step="0.01" oninput="onMuSlider()">
-          </div>
-          <div class="num-row">
-            <input type="number" id="mu-num" class="prop-num" value="0.30" min="0" max="1" step="0.01" onchange="onMuNumber()">
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- ========================= -->
-    <!-- PANNELLO OGGETTO -->
-    <!-- ========================= -->
-
+    <!-- OGGETTO -->
+    <button class="menu-btn obj" onclick="togglePanel('obj', this)">
+      📦 Oggetto
+      <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 5l4 4 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
     <div class="panel" id="panel-obj">
-      <div class="panel-header">
-        <span class="panel-title">Oggetto</span>
-        <button class="panel-close" onclick="closePanelBtn('obj')">Chiudi ×</button>
+      <div class="prop-group">
+        <div class="prop-label">Massa (kg)</div>
+        <div class="prop-row">
+          <input type="range" id="mass-slider" min="0.1" max="100" value="5" step="0.1" oninput="onMassSlider()">
+          <input type="number" id="mass-num" value="5.00" min="0.1" max="100" step="0.1" onchange="onMassNumber()">
+          <span class="prop-unit">kg</span>
+        </div>
+      </div>
+      <div class="prop-group">
+        <div class="prop-label">Forma</div>
+        <div class="shape-btns">
+          <button class="shape-btn active" onclick="setShape('cube',this)">Cubo</button>
+          <button class="shape-btn" onclick="setShape('sphere',this)">Sfera</button>
+          <button class="shape-btn" onclick="setShape('cylinder',this)">Cilindro</button>
+        </div>
       </div>
 
-      <div class="prop-grid">
-
-        <div class="prop-group">
-          <div class="prop-label">Massa (kg)</div>
-          <div class="slider-row">
-            <input type="range" id="mass-slider" min="0.1" max="100" value="5" step="0.1" oninput="onMassSlider()">
-          </div>
-          <div class="num-row">
-            <input type="number" id="mass-num" class="prop-num" value="5.00" min="0.1" max="100" step="0.1" onchange="onMassNumber()">
-            <span class="prop-unit">kg</span>
-          </div>
-        </div>
-
-        <div class="prop-group">
-          <div class="prop-label">Forma</div>
-          <div class="shape-btns" style="margin-top:4px">
-            <button class="shape-btn active" onclick="setShape('cube',this)">Cubo</button>
-            <button class="shape-btn" onclick="setShape('sphere',this)">Sfera</button>
-            <button class="shape-btn" onclick="setShape('cylinder',this)">Cilindro</button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- FORZE -->
       <div class="forces-section">
         <div class="forces-title">Forze in gioco</div>
-
         <div class="force-row">
           <div class="force-dot" style="background:#E24B4A"></div>
           <span class="force-name">Peso (Fg)</span>
           <span class="force-val" id="f-fg">—</span>
           <div class="force-bar-wrap"><div class="force-bar" id="b-fg" style="background:#E24B4A"></div></div>
         </div>
-
         <div class="force-row">
           <div class="force-dot" style="background:#378ADD"></div>
           <span class="force-name">Normale (N)</span>
           <span class="force-val" id="f-fn">—</span>
           <div class="force-bar-wrap"><div class="force-bar" id="b-fn" style="background:#378ADD"></div></div>
         </div>
-
         <div class="force-row">
           <div class="force-dot" style="background:#1D9E75"></div>
           <span class="force-name">Attrito (Ff)</span>
           <span class="force-val" id="f-ff">—</span>
           <div class="force-bar-wrap"><div class="force-bar" id="b-ff" style="background:#1D9E75"></div></div>
         </div>
-
         <div class="force-row">
           <div class="force-dot" style="background:#EF9F27"></div>
           <span class="force-name">Risultante (Fr)</span>
           <span class="force-val" id="f-fr">—</span>
           <div class="force-bar-wrap"><div class="force-bar" id="b-fr" style="background:#EF9F27"></div></div>
         </div>
-
         <div class="status-line">
-          <span style="font-size:12px;color:var(--color-text-secondary)">Stato:</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.4)">Stato:</span>
           <span class="badge" id="status-badge">—</span>
         </div>
       </div>
-
     </div>
-
-    <p class="hint" id="hint-text">
-      Clicca sul piano o sull'oggetto per vederne le proprietà
-    </p>
 
   </div>
 
+  <div id="hint">Trascina per ruotare la camera • Scorri per zoom</div>
+
   <script type="module" src="js/main.js"></script>
+
+  <script>
+    // togglePanel: apre/chiude il pannello e gestisce il chevron
+    function togglePanel(which, btn) {
+      const panel = document.getElementById('panel-' + which);
+      const isOpen = panel.classList.contains('open');
+
+      // Chiudi tutti
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+
+      // Se era chiuso, aprilo
+      if (!isOpen) {
+        panel.classList.add('open');
+        btn.classList.add('active');
+      }
+    }
+  </script>
 
 </body>
 </html>

@@ -1,11 +1,7 @@
-// Gestione interfaccia HTML.
-// Aggiorna testi, badge, barre delle forze, pannelli.
+// Gestione interfaccia HTML overlay.
 // NON disegna canvas, NON contiene logica fisica.
 
 import { clamp } from './utils.js';
-import { state } from './state.js';
-
-// --- Sincronizzazione slider ↔ input numerico ---
 
 export function syncFrom(srcId, tgtId, mn, mx, dec) {
   const src = document.getElementById(srcId);
@@ -20,24 +16,6 @@ export function syncFrom(srcId, tgtId, mn, mx, dec) {
 export function getVal(id) {
   return parseFloat(document.getElementById(id).value);
 }
-
-// --- Pannelli ---
-
-export function openPanel(which) {
-  if (state.activePanel && state.activePanel !== which) {
-    document.getElementById('panel-' + state.activePanel).classList.remove('open');
-  }
-  state.activePanel = which;
-  document.getElementById('panel-' + which).classList.add('open');
-  document.getElementById('hint-text').style.display = 'none';
-}
-
-export function closePanel(which) {
-  document.getElementById('panel-' + which).classList.remove('open');
-  if (state.activePanel === which) state.activePanel = null;
-}
-
-// --- Aggiornamento valori forze e badge ---
 
 export function updateForceDisplay(physics) {
   const { Fg, Fn, Ff, Fr, maxF, status } = physics;

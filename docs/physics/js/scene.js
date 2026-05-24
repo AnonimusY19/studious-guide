@@ -1,62 +1,58 @@
-// Setup scena Three.js: renderer, scena, camera, luci.
-// NON conosce state, physics o UI.
+// Setup scena Three.js fullscreen.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let renderer, scene, camera, controls;
 
-/**
- * Inizializza Three.js sul canvas esistente.
- * @param {HTMLCanvasElement} canvas
- */
 export function initScene(canvas) {
 
-  // --- Renderer ---
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // --- Scena ---
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xeef2ff);
+  scene.background = new THREE.Color(0x1a1a2e);
+  scene.fog = new THREE.Fog(0x1a1a2e, 15, 30);
 
-  // --- Camera ---
-  const aspect = canvas.clientWidth / canvas.clientHeight;
-  camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-  camera.position.set(4, 3, 6);
-  camera.lookAt(0, 0, 0);
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(5, 4, 7);
+  camera.lookAt(2, 1, 0);
 
-  // --- Luci ---
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  // Luce ambiente
+  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambient);
 
-  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(5, 8, 5);
+  // Luce principale
+  const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+  sun.position.set(6, 10, 6);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 0.1;
-  sun.shadow.camera.far = 30;
-  sun.shadow.camera.left = -6;
-  sun.shadow.camera.right = 6;
-  sun.shadow.camera.top = 6;
-  sun.shadow.camera.bottom = -6;
+  sun.shadow.camera.far = 40;
+  sun.shadow.camera.left = -8;
+  sun.shadow.camera.right = 8;
+  sun.shadow.camera.top = 8;
+  sun.shadow.camera.bottom = -8;
   scene.add(sun);
 
-  // --- OrbitControls (ruota la camera col mouse) ---
+  // Luce di riempimento
+  const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+  fill.position.set(-4, 2, -4);
+  scene.add(fill);
+
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.target.set(0, 0, 0);
+  controls.dampingFactor = 0.06;
+  controls.target.set(2, 1, 0);
+  controls.minDistance = 2;
+  controls.maxDistance = 20;
 
-  // --- Resize ---
   window.addEventListener('resize', () => {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
 }
