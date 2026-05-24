@@ -1,4 +1,4 @@
-// Orchestratore principale — versione 3D.
+// Orchestratore principale — versione 3D fullscreen.
 
 import { state }              from './state.js';
 import { computePhysics }     from './physics.js';
@@ -11,30 +11,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const canvas = document.getElementById('sim-canvas');
 
-  // --- Init Three.js ---
   initScene(canvas);
   buildScene();
 
-  // --- Funzione update (chiamata dagli input) ---
   function update() {
     const physics = computePhysics(state.theta, state.mu, state.mass, state.grav);
     updateForceDisplay(physics);
     updateScene(physics);
   }
 
-  // --- Render loop continuo ---
   function loop() {
     requestAnimationFrame(loop);
-    getControls().update();  // damping OrbitControls
+    getControls().update();
     update();
     getRenderer().render(getScene(), getCamera());
   }
   loop();
 
-  // --- Input ---
   const {
     setShape,
-    closePanelBtn,
     onAngleSlider, onAngleNumber,
     onMuSlider,    onMuNumber,
     onMassSlider,  onMassNumber,
@@ -42,7 +37,6 @@ window.addEventListener('DOMContentLoaded', () => {
   } = initInput(canvas, update);
 
   window.setShape      = setShape;
-  window.closePanelBtn = closePanelBtn;
   window.onAngleSlider = onAngleSlider;
   window.onAngleNumber = onAngleNumber;
   window.onMuSlider    = onMuSlider;
