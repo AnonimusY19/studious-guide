@@ -1,0 +1,106 @@
+/* Prop groups */
+.prop-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  margin-bottom: 12px;
+}
+
+.prop-group:last-child {
+  margin-bottom: 0;
+}
+
+.prop-label {
+  font-size: 11px;
+
+  color: rgba(255,255,255,0.5);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.04em;
+}
+
+.prop-row {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+}
+
+/* Range */
+input[type=range] {
+  flex: 1;
+
+  accent-color: #7F77DD;
+}
+
+/* Number */
+input[type=number] {
+  width: 64px;
+
+  background: rgba(255,255,255,0.1);
+
+  border: 0.5px solid rgba(255,255,255,0.2);
+
+  border-radius: 6px;
+
+  color: #fff;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  padding: 4px 7px;
+
+  text-align: right;
+}
+
+input[type=number]:focus {
+  outline: none;
+
+  border-color: rgba(255,255,255,0.5);
+}
+
+.prop-unit {
+  font-size: 11px;
+
+  color: rgba(255,255,255,0.4);
+
+  min-width: 28px;
+}
+
+/* Shape buttons */
+.shape-btns {
+  display: flex;
+
+  gap: 6px;
+
+  flex-wrap: wrap;
+}
+
+.shape-btn {
+  font-size: 12px;
+
+  padding: 4px 10px;
+
+  border-radius: 6px;
+
+  border: 0.5px solid rgba(255,255,255,0.2);
+
+  background: rgba(255,255,255,0.08);
+
+  color: rgba(255,255,255,0.7);
+
+  cursor: pointer;
+
+  transition: background .12s;
+}
+
+.shape-btn.active {
+  background: rgba(127,119,221,0.6);
+
+  color: #fff;
+
+  border-color: rgba(127,119,221,0.8);
+}

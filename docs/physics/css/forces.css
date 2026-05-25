@@ -1,0 +1,111 @@
+/* Forces */
+.forces-section {
+  margin-top: 12px;
+
+  padding-top: 12px;
+
+  border-top: 0.5px solid rgba(255,255,255,0.1);
+}
+
+.forces-title {
+  font-size: 11px;
+
+  color: rgba(255,255,255,0.4);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.04em;
+
+  margin-bottom: 8px;
+}
+
+.force-row {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 6px;
+
+  font-size: 12px;
+}
+
+.force-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  flex-shrink: 0;
+}
+
+.force-name {
+  color: rgba(255,255,255,0.5);
+
+  min-width: 96px;
+}
+
+.force-val {
+  font-weight: 500;
+
+  color: #fff;
+
+  min-width: 52px;
+}
+
+.force-bar-wrap {
+  flex: 1;
+
+  height: 3px;
+
+  background: rgba(255,255,255,0.1);
+
+  border-radius: 2px;
+
+  overflow: hidden;
+}
+
+.force-bar {
+  height: 100%;
+
+  border-radius: 2px;
+
+  transition: width .3s;
+}
+
+/* Status */
+.status-line {
+  margin-top: 10px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+}
+
+.badge {
+  padding: 2px 8px;
+
+  border-radius: 6px;
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badge-slide {
+  background: rgba(185,28,28,0.5);
+
+  color: #fca5a5;
+}
+
+.badge-still {
+  background: rgba(21,128,61,0.5);
+
+  color: #86efac;
+}
+
+.badge-limit {
+  background: rgba(180,83,9,0.5);
+
+  color: #fcd34d;
+}
