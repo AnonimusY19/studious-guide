@@ -1,1 +1,11 @@
 *.jpg filter=lfs diff=lfs merge=lfs -text
+
+* linguist-vendored
+
+docs/physics/** linguist-vendored=false
+
+docs/physics/**/*.js   linguist-language=JavaScript
+docs/physics/**/*.html linguist-language=HTML
+docs/physics/**/*.css  linguist-language=CSS
+
+docs/physics/**/*.py linguist-vendored
