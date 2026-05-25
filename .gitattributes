@@ -1,11 +1,17 @@
 *.jpg filter=lfs diff=lfs merge=lfs -text
 
-* linguist-vendored
+# Escludi tutto dal conteggio linguaggi
+* linguist-detectable=false
 
-docs/physics/** linguist-vendored=false
+# Riabilita SOLO i file del simulatore physics
+docs/physics/**/*.html linguist-detectable=true
+docs/physics/**/*.css  linguist-detectable=true
+docs/physics/**/*.js   linguist-detectable=true
 
-docs/physics/**/*.js   linguist-language=JavaScript
+# Forza i linguaggi
 docs/physics/**/*.html linguist-language=HTML
 docs/physics/**/*.css  linguist-language=CSS
+docs/physics/**/*.js   linguist-language=JavaScript
 
-docs/physics/**/*.py linguist-vendored
+# Escludi Python
+docs/physics/**/*.py linguist-detectable=false
