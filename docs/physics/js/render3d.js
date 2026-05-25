@@ -1,18 +1,17 @@
 // Disegno 3D con Three.js.
-// Il piano ruota attorno alla sua estremità sinistra (pivot = base del piano).
 
 import * as THREE from 'three';
 import { getScene } from './scene.js';
 import { state } from './state.js';
 
-let pivotGroup  = null;   // gruppo che fa da pivot per la rotazione del piano
-let planeMesh   = null;
-let objectMesh  = null;
-let arrowGroup  = null;
+let pivotGroup = null;
+let planeMesh  = null;
+let objectMesh = null;
+let arrowGroup = null;
 
-const PLANE_LEN      = 5;     // lunghezza piano in unità Three.js
-const PLANE_HEIGHT   = 0.15;  // spessore piano
-const PLANE_DEPTH    = 2;     // profondità piano (asse Z)
+const PLANE_LEN    = 5;
+const PLANE_HEIGHT = 0.15;
+const PLANE_DEPTH  = 2;
 
 const COLORS = {
   Fg: 0xE24B4A,
@@ -26,15 +25,16 @@ const planeMatHL = new THREE.MeshLambertMaterial({ color: 0x9993dd, side: THREE.
 const objMat     = new THREE.MeshLambertMaterial({ color: 0xAFA9EC });
 const objMatHL   = new THREE.MeshLambertMaterial({ color: 0x7F77DD });
 
+// Dimensione fissa dell'oggetto — NON scala con la massa
+// La massa è un dato fisico, non visivo: influenza le forze, non la dimensione
+const OBJ_SIZE = 0.45;
+
 export function buildScene() {
   const scene = getScene();
 
-  // --- Pivot group: ruota attorno all'origine (base sinistra del piano) ---
   pivotGroup = new THREE.Group();
   scene.add(pivotGroup);
 
-  // Il piano è centrato a (PLANE_LEN/2, 0, 0) nel gruppo,
-  // così il pivot è alla sua estremità sinistra
   const planeGeo = new THREE.BoxGeometry(PLANE_LEN, PLANE_HEIGHT, PLANE_DEPTH);
   planeMesh = new THREE.Mesh(planeGeo, planeMat);
   planeMesh.position.set(PLANE_LEN / 2, 0, 0);
@@ -42,17 +42,14 @@ export function buildScene() {
   planeMesh.userData.type = 'plane';
   pivotGroup.add(planeMesh);
 
-  // --- Oggetto ---
   objectMesh = buildObjectMesh(state.shape);
   objectMesh.castShadow = true;
   scene.add(objectMesh);
 
-  // --- Frecce ---
   arrowGroup = new THREE.Group();
   scene.add(arrowGroup);
 
-  // --- Griglia a terra ---
-  const grid = new THREE.GridHelper(12, 12, 0xcccccc, 0xe8e8e8);
+  const grid = new THREE.GridHelper(12, 12, 0x444466, 0x333355);
   grid.position.set(2, -0.01, 0);
   scene.add(grid);
 }
@@ -63,59 +60,46 @@ export function updateScene(physics) {
   const { rad, Fg, Fn, Ff, Fr } = physics;
   const scene = getScene();
 
-  // --- Rotazione piano attorno al pivot (origine) ---
+  // Piano
   pivotGroup.rotation.z = rad;
-
-  // Highlight
   planeMesh.material = state.activePanel === 'plane' ? planeMatHL : planeMat;
 
-  // --- Ricostruisci oggetto se forma cambiata ---
+  // Ricostruisci oggetto solo se la forma cambia
   if (objectMesh.userData.shape !== state.shape) {
     scene.remove(objectMesh);
     objectMesh = buildObjectMesh(state.shape);
     objectMesh.castShadow = true;
     scene.add(objectMesh);
   }
-
   objectMesh.material = state.activePanel === 'obj' ? objMatHL : objMat;
 
-  // --- Posizione oggetto sul piano ---
-  // L'oggetto si trova a t=0.5 lungo il piano, sopra la sua superficie.
-  // Nel sistema ruotato del pivot:
-  //   - lungo il piano: distanza = PLANE_LEN * 0.5
-  //   - perpendicolare: PLANE_HEIGHT/2 + objSize/2
-  const t       = 0.5;
-  const objSize = getObjSize();
-  const along   = PLANE_LEN * t;                    // distanza lungo il piano
-  const perp    = PLANE_HEIGHT / 2 + objSize / 2;   // sopra la superficie
+  // Offset = metà spessore piano + metà dimensione oggetto
+  // Costante perché OBJ_SIZE è costante
+  const offset = PLANE_HEIGHT / 2 + OBJ_SIZE / 2;
+  const along  = PLANE_LEN * 0.5;
 
-  // Converti in coordinate mondo applicando la rotazione del pivot
-  const ox = along * Math.cos(rad) - perp * Math.sin(rad);
-  const oy = along * Math.sin(rad) + perp * Math.cos(rad);
+  // Posizione nel sistema mondo: ruota il vettore (along, offset) di rad
+  const ox = along * Math.cos(rad) - offset * Math.sin(rad);
+  const oy = along * Math.sin(rad) + offset * Math.cos(rad);
 
   objectMesh.position.set(ox, oy, 0);
   objectMesh.rotation.z = rad;
 
-  // --- Frecce forze ---
   updateArrows(physics, ox, oy);
 }
 
 export function getClickTargets() {
-  // Includi planeMesh (figlio del pivotGroup) e objectMesh
   return [planeMesh, objectMesh].filter(Boolean);
 }
 
-// --- Helper privati ---
-
 function buildObjectMesh(shape) {
-  const size = getObjSize();
   let geo;
   if (shape === 'sphere') {
-    geo = new THREE.SphereGeometry(size / 2, 32, 32);
+    geo = new THREE.SphereGeometry(OBJ_SIZE / 2, 32, 32);
   } else if (shape === 'cylinder') {
-    geo = new THREE.CylinderGeometry(size / 2.5, size / 2.5, size, 32);
+    geo = new THREE.CylinderGeometry(OBJ_SIZE / 2.5, OBJ_SIZE / 2.5, OBJ_SIZE, 32);
   } else {
-    geo = new THREE.BoxGeometry(size, size, size);
+    geo = new THREE.BoxGeometry(OBJ_SIZE, OBJ_SIZE, OBJ_SIZE);
   }
   const mesh = new THREE.Mesh(geo, objMat.clone());
   mesh.userData.shape = shape;
@@ -123,41 +107,27 @@ function buildObjectMesh(shape) {
   return mesh;
 }
 
-function getObjSize() {
-  return Math.max(0.25, Math.min(0.6, 0.25 + Math.sqrt(state.mass) * 0.03));
-}
-
 function updateArrows(physics, ox, oy) {
   const { rad, Fg, Fn, Ff, Fr } = physics;
   while (arrowGroup.children.length) arrowGroup.remove(arrowGroup.children[0]);
 
-  const sc = 0.035; // scala N → unità Three.js
+  const sc = 0.035;
 
-  // Peso: verso il basso (asse -Y)
   addArrow(ox, oy, 0, -Fg * sc, 0, COLORS.Fg);
 
-  // Normale: perpendicolare al piano (ruotata di rad rispetto a Y)
   const nLen = Fn * sc;
   addArrow(ox, oy, -Math.sin(rad) * nLen, Math.cos(rad) * nLen, 0, COLORS.Fn);
 
-  // Attrito: lungo il piano, opposto al moto potenziale
   if (Ff > 0.5) {
     const fLen = Ff * sc;
     const dir  = Fr > 0 ? 1 : -1;
-    addArrow(ox, oy,
-      Math.cos(rad) * fLen * dir,
-      Math.sin(rad) * fLen * dir,
-      0, COLORS.Ff);
+    addArrow(ox, oy, Math.cos(rad) * fLen * dir, Math.sin(rad) * fLen * dir, 0, COLORS.Ff);
   }
 
-  // Risultante: lungo il piano
   const frLen = Math.abs(Fr) * sc;
   if (frLen > 0.04) {
     const dir = Fr > 0 ? -1 : 1;
-    addArrow(ox, oy,
-      Math.cos(rad) * frLen * dir,
-      Math.sin(rad) * frLen * dir,
-      0, COLORS.Fr);
+    addArrow(ox, oy, Math.cos(rad) * frLen * dir, Math.sin(rad) * frLen * dir, 0, COLORS.Fr);
   }
 }
 
