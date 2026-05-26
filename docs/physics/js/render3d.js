@@ -2,7 +2,8 @@
 
 import * as THREE from 'three';
 import { getScene } from './scene.js';
-import { state } from './state.js';
+import { state }    from './state.js';
+import { getObjTransform } from './world.js';
 
 let pivotGroup = null;
 let planeMesh  = null;
@@ -12,6 +13,7 @@ let arrowGroup = null;
 const PLANE_LEN    = 5;
 const PLANE_HEIGHT = 0.15;
 const PLANE_DEPTH  = 2;
+const OBJ_SIZE     = 0.45;
 
 const COLORS = {
   Fg: 0xE24B4A,
@@ -24,10 +26,6 @@ const planeMat   = new THREE.MeshLambertMaterial({ color: 0xd8d6ce, side: THREE.
 const planeMatHL = new THREE.MeshLambertMaterial({ color: 0x9993dd, side: THREE.DoubleSide });
 const objMat     = new THREE.MeshLambertMaterial({ color: 0xAFA9EC });
 const objMatHL   = new THREE.MeshLambertMaterial({ color: 0x7F77DD });
-
-// Dimensione fissa dell'oggetto — NON scala con la massa
-// La massa è un dato fisico, non visivo: influenza le forze, non la dimensione
-const OBJ_SIZE = 0.45;
 
 export function buildScene() {
   const scene = getScene();
@@ -54,17 +52,16 @@ export function buildScene() {
   scene.add(grid);
 }
 
+// Aggiornamento statico (fisica ferma)
 export function updateScene(physics) {
   if (!pivotGroup || !planeMesh || !objectMesh) return;
 
   const { rad, Fg, Fn, Ff, Fr } = physics;
   const scene = getScene();
 
-  // Piano
   pivotGroup.rotation.z = rad;
   planeMesh.material = state.activePanel === 'plane' ? planeMatHL : planeMat;
 
-  // Ricostruisci oggetto solo se la forma cambia
   if (objectMesh.userData.shape !== state.shape) {
     scene.remove(objectMesh);
     objectMesh = buildObjectMesh(state.shape);
@@ -73,12 +70,8 @@ export function updateScene(physics) {
   }
   objectMesh.material = state.activePanel === 'obj' ? objMatHL : objMat;
 
-  // Offset = metà spessore piano + metà dimensione oggetto
-  // Costante perché OBJ_SIZE è costante
   const offset = PLANE_HEIGHT / 2 + OBJ_SIZE / 2;
   const along  = PLANE_LEN * 0.5;
-
-  // Posizione nel sistema mondo: ruota il vettore (along, offset) di rad
   const ox = along * Math.cos(rad) - offset * Math.sin(rad);
   const oy = along * Math.sin(rad) + offset * Math.cos(rad);
 
@@ -86,6 +79,37 @@ export function updateScene(physics) {
   objectMesh.rotation.z = rad;
 
   updateArrows(physics, ox, oy);
+}
+
+// Sincronizza il mesh con il corpo fisico cannon-es
+export function syncObjToPhysics() {
+  const t = getObjTransform();
+  if (!t || !objectMesh) return;
+
+  objectMesh.position.set(t.position.x, t.position.y, t.position.z);
+  objectMesh.quaternion.set(
+    t.quaternion.x, t.quaternion.y,
+    t.quaternion.z, t.quaternion.w
+  );
+
+  // Aggiorna frecce sulla nuova posizione
+  const ox = t.position.x;
+  const oy = t.position.y;
+  const rad = state.theta * Math.PI / 180;
+  const { Fg, Fn, Ff, Fr } = computeForces();
+  updateArrows({ rad, Fg, Fn, Ff, Fr }, ox, oy);
+}
+
+function computeForces() {
+  const g    = state.grav;
+  const m    = state.mass;
+  const rad  = state.theta * Math.PI / 180;
+  const Fg   = m * g;
+  const Fn   = Fg * Math.cos(rad);
+  const Fpara = Fg * Math.sin(rad);
+  const Ff   = state.mu * Fn;
+  const Fr   = Fpara - Ff;
+  return { Fg, Fn, Ff, Fr };
 }
 
 export function getClickTargets() {
