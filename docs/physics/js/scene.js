@@ -1,7 +1,8 @@
-// Setup scena Three.js fullscreen.
+// Setup scena Three.js fullscreen + WebXR.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton }      from 'three/addons/webxr/VRButton.js';
 
 let renderer, scene, camera, controls;
 
@@ -12,6 +13,9 @@ export function initScene(canvas) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Abilita WebXR
+  renderer.xr.enabled = true;
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a1a2e);
@@ -54,6 +58,64 @@ export function initScene(canvas) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+  });
+
+  // Inizializza il pulsante VR personalizzato nell'HTML
+  // (non usiamo VRButton.createButton perché vogliamo il nostro stile)
+  _initVRButton();
+}
+
+/**
+ * Collega il pulsante #btn-vr al ciclo WebXR.
+ * - Se il browser/dispositivo non supporta WebXR, nasconde il pulsante.
+ * - Al click richiede la sessione immersive-vr.
+ * - All'uscita dalla sessione VR ripristina lo stato normale.
+ */
+function _initVRButton() {
+  const btn = document.getElementById('btn-vr');
+  if (!btn) return;
+
+  if (!navigator.xr) {
+    // WebXR non disponibile (browser desktop senza supporto)
+    btn.textContent = '🥽 VR non supportato';
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    return;
+  }
+
+  navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+    if (!supported) {
+      btn.textContent = '🥽 VR non disponibile';
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+      return;
+    }
+
+    // VR disponibile
+    btn.addEventListener('click', () => {
+      if (renderer.xr.isPresenting) {
+        // Esci dalla VR
+        renderer.xr.getSession().end();
+      } else {
+        // Entra in VR
+        navigator.xr.requestSession('immersive-vr', {
+          optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],
+        }).then(session => {
+          renderer.xr.setSession(session);
+          btn.textContent = '✕ Esci dalla VR';
+          btn.style.background = 'rgba(185,28,28,0.85)';
+
+          session.addEventListener('end', () => {
+            btn.textContent = '🥽 Avvia VR';
+            btn.style.background = 'rgba(83,74,183,0.85)';
+          });
+        }).catch(err => {
+          console.error('Errore avvio sessione VR:', err);
+        });
+      }
+    });
   });
 }
 

@@ -32,13 +32,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function loop(timestamp) {
-    requestAnimationFrame(loop);
-    getControls().update();
+  // Usa renderer.setAnimationLoop invece di requestAnimationFrame:
+  // è NECESSARIO per WebXR — rAF normale viene sospeso durante la sessione VR.
+  const renderer = getRenderer();
+  renderer.setAnimationLoop((timestamp) => {
+    // In modalità VR OrbitControls non serve (la camera è gestita dall'headset)
+    if (!renderer.xr.isPresenting) {
+      getControls().update();
+    }
     update(timestamp);
-    getRenderer().render(getScene(), getCamera());
-  }
-  loop(0);
+    renderer.render(getScene(), getCamera());
+  });
 
   // --- Callbacks input ---
   const {
@@ -68,7 +72,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // --- Start / Reset ---
   window.startSim = function () {
     if (isRunning()) return;
-    initWorld();          // FIX: non passa più state (lo importa world.js direttamente)
+    initWorld();
     setUILocked(true);
     document.getElementById('btn-start').style.display = 'none';
     document.getElementById('btn-reset').style.display = 'block';
