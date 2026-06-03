@@ -11,9 +11,27 @@ import { initWorld, stepWorld, destroyWorld, isRunning } from './world.js';
 window.addEventListener('DOMContentLoaded', () => {
 
   const canvas = document.getElementById('sim-canvas');
+  const ui     = document.getElementById('ui');
 
   initScene(canvas);
   buildScene();
+
+  // Render iniziale statico
+  const initPhysics = computePhysics(state.theta, state.mu, state.mass, state.grav);
+  updateForceDisplay(initPhysics);
+  updateScene(initPhysics);
+
+  // FIX CORRETTO: intercettiamo gli eventi sul CANVAS in fase capture,
+  // e li annulliamo solo se l'evento proviene dall'area dell'UI overlay.
+  // stopPropagation sull'#ui invece bloccava i click sui bottoni figli.
+  function isOverUI(e) {
+    const r = ui.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right &&
+           e.clientY >= r.top  && e.clientY <= r.bottom;
+  }
+
+  canvas.addEventListener('pointerdown', e => { if (isOverUI(e)) e.stopImmediatePropagation(); }, true);
+  canvas.addEventListener('wheel',       e => { if (isOverUI(e)) e.stopImmediatePropagation(); }, true);
 
   let lastTime = null;
 
@@ -65,24 +83,23 @@ window.addEventListener('DOMContentLoaded', () => {
   window.onGravSlider  = onGravSlider;
   window.onGravNumber  = onGravNumber;
 
-  // --- Start / Reset ---
-  window.startSim = function () {
+  document.getElementById('btn-start').addEventListener('click', function () {
     if (isRunning()) return;
-    initWorld();          // FIX: non passa più state (lo importa world.js direttamente)
+    initWorld();
     setUILocked(true);
-    document.getElementById('btn-start').style.display = 'none';
+    this.style.display = 'none';
     document.getElementById('btn-reset').style.display = 'block';
-  };
+  });
 
-  window.resetSim = function () {
+  document.getElementById('btn-reset').addEventListener('click', function () {
     destroyWorld();
     setUILocked(false);
+    this.style.display = 'none';
     document.getElementById('btn-start').style.display = 'block';
-    document.getElementById('btn-reset').style.display = 'none';
     const physics = computePhysics(state.theta, state.mu, state.mass, state.grav);
     updateForceDisplay(physics);
     updateScene(physics);
-  };
+  });
 });
 
 function setUILocked(locked) {

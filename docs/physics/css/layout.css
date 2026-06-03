@@ -1,13 +1,12 @@
-/* Canvas occupa tutta la finestra */
+/* Canvas occupa tutta la finestra — z-index basso, riceve eventi solo fuori dall'UI */
 #sim-canvas {
   position: fixed;
   top: 0;
   left: 0;
-
   width: 100vw;
   height: 100vh;
-
   display: block;
+  z-index: 0;
 }
 
 /* ================================
@@ -15,40 +14,28 @@
 ================================ */
 #ui {
   position: fixed;
-
   top: 16px;
   left: 16px;
-
   z-index: 10;
-
   display: flex;
   flex-direction: column;
-
   gap: 6px;
-
   min-width: 240px;
+  /* FIX: blocca la propagazione degli eventi verso il canvas */
+  pointer-events: auto;
 }
 
 /* Hint */
 #hint {
   position: fixed;
-
   bottom: 16px;
   left: 50%;
-
   transform: translateX(-50%);
-
   background: rgba(0,0,0,0.5);
-
   color: rgba(255,255,255,0.6);
-
   font-size: 12px;
-
   padding: 6px 14px;
-
   border-radius: 20px;
-
   backdrop-filter: blur(8px);
-
   pointer-events: none;
 }

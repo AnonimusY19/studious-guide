@@ -4,6 +4,7 @@
 
 import * as CANNON from 'cannon-es';
 import { state } from './state.js';
+import { computePhysics } from './physics.js';
 
 let world       = null;
 let planeBody   = null;
@@ -22,17 +23,19 @@ export function initWorld() {
   world.broadphase = new CANNON.NaiveBroadphase();
   world.solver.iterations = 20;
 
-  // FIX: crea e registra i materiali nel mondo PRIMA di creare i body
   const planeMat = new CANNON.Material('plane');
   const objMat   = new CANNON.Material('object');
-  world.addMaterial(planeMat);
-  world.addMaterial(objMat);
 
-  // FIX: registra il ContactMaterial nel mondo subito
+  // L'attrito di contatto di cannon-es viene applicato per ogni punto di
+  // contatto: su un cubo può risultare molto più alto del valore didattico μN.
+  // Lo lasciamo a zero e applichiamo sotto la forza tangenziale coerente con
+  // le forze mostrate nella UI.
   const contact = new CANNON.ContactMaterial(planeMat, objMat, {
-    friction:    state.mu,
+    friction:    0.0,
     restitution: 0.0,
   });
+  world.defaultContactMaterial.friction = 0.0;
+  world.defaultContactMaterial.restitution = 0.0;
   world.addContactMaterial(contact);
 
   const rad = state.theta * Math.PI / 180;
@@ -91,7 +94,58 @@ export function initWorld() {
 
 export function stepWorld(dt) {
   if (!world) return;
+  applyInclineFriction();
   world.step(1 / 60, dt, 3);
+}
+
+function applyInclineFriction() {
+  if (!objectBody || !isObjectNearPlane()) return;
+
+  const { rad, Fpara, Ff } = computePhysics(state.theta, state.mu, state.mass, state.grav);
+  const tx = Math.cos(rad);
+  const ty = Math.sin(rad);
+  const speedUpSlope = objectBody.velocity.x * tx + objectBody.velocity.y * ty;
+  const speedEps = 0.015;
+
+  let forceUpSlope;
+  if (speedUpSlope < -speedEps) {
+    forceUpSlope = Ff;
+  } else if (speedUpSlope > speedEps) {
+    forceUpSlope = -Ff;
+  } else if (Fpara > Ff) {
+    forceUpSlope = Ff;
+  } else {
+    forceUpSlope = Fpara;
+    objectBody.velocity.x -= speedUpSlope * tx;
+    objectBody.velocity.y -= speedUpSlope * ty;
+  }
+
+  if (Math.abs(forceUpSlope) < 0.001) return;
+
+  objectBody.applyForce(
+    new CANNON.Vec3(forceUpSlope * tx, forceUpSlope * ty, 0),
+    objectBody.position
+  );
+}
+
+function isObjectNearPlane() {
+  if (!objectBody) return false;
+
+  const rad = state.theta * Math.PI / 180;
+  const tx = Math.cos(rad);
+  const ty = Math.sin(rad);
+  const nx = -Math.sin(rad);
+  const ny = Math.cos(rad);
+  const p = objectBody.position;
+
+  const along = p.x * tx + p.y * ty;
+  const normalDistance = p.x * nx + p.y * ny;
+  const contactDistance = PLANE_HEIGHT / 2 + OBJ_SIZE / 2;
+
+  return along > -OBJ_SIZE &&
+         along < PLANE_LEN + OBJ_SIZE &&
+         normalDistance > PLANE_HEIGHT / 2 - 0.08 &&
+         normalDistance < contactDistance + OBJ_SIZE;
 }
 
 export function getObjTransform() {

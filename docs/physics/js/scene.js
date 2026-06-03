@@ -21,11 +21,9 @@ export function initScene(canvas) {
   camera.position.set(5, 4, 7);
   camera.lookAt(2, 1, 0);
 
-  // Luce ambiente
   const ambient = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambient);
 
-  // Luce principale
   const sun = new THREE.DirectionalLight(0xffffff, 1.4);
   sun.position.set(6, 10, 6);
   sun.castShadow = true;
@@ -38,12 +36,12 @@ export function initScene(canvas) {
   sun.shadow.camera.bottom = -8;
   scene.add(sun);
 
-  // Luce di riempimento
   const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
   fill.position.set(-4, 2, -4);
   scene.add(fill);
 
-  controls = new OrbitControls(camera, renderer.domElement);
+  // FIX: OrbitControls rimane sul canvas (corretto)
+  controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.target.set(2, 1, 0);
