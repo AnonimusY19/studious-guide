@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { getScene } from './scene.js';
 import { state }    from './state.js';
 import { getObjTransform } from './world.js';
+import { computePhysics } from './physics.js';
 
 let pivotGroup = null;
 let planeMesh  = null;
@@ -26,6 +27,7 @@ const planeMat   = new THREE.MeshLambertMaterial({ color: 0xd8d6ce, side: THREE.
 const planeMatHL = new THREE.MeshLambertMaterial({ color: 0x9993dd, side: THREE.DoubleSide });
 const objMat     = new THREE.MeshLambertMaterial({ color: 0xAFA9EC });
 const objMatHL   = new THREE.MeshLambertMaterial({ color: 0x7F77DD });
+const markerMat  = new THREE.MeshLambertMaterial({ color: 0x2f2a55 });
 
 export function buildScene() {
   const scene = getScene();
@@ -96,20 +98,19 @@ export function syncObjToPhysics() {
   const ox = t.position.x;
   const oy = t.position.y;
   const rad = state.theta * Math.PI / 180;
-  const { Fg, Fn, Ff, Fr } = computeForces();
+  const { Fg, Fn, Ff, Fr } = t.onPlane
+    ? computePhysics(state.theta, state.mu, state.mass, state.grav, state.shape)
+    : computeAirborneForces();
   updateArrows({ rad, Fg, Fn, Ff, Fr }, ox, oy);
 }
 
-function computeForces() {
-  const g    = state.grav;
-  const m    = state.mass;
-  const rad  = state.theta * Math.PI / 180;
-  const Fg   = m * g;
-  const Fn   = Fg * Math.cos(rad);
-  const Fpara = Fg * Math.sin(rad);
-  const Ff   = state.mu * Fn;
-  const Fr   = Fpara - Ff;
-  return { Fg, Fn, Ff, Fr };
+function computeAirborneForces() {
+  return {
+    Fg: state.mass * state.grav,
+    Fn: 0,
+    Ff: 0,
+    Fr: 0,
+  };
 }
 
 export function getClickTargets() {
@@ -122,12 +123,30 @@ function buildObjectMesh(shape) {
     geo = new THREE.SphereGeometry(OBJ_SIZE / 2, 32, 32);
   } else if (shape === 'cylinder') {
     geo = new THREE.CylinderGeometry(OBJ_SIZE / 2.5, OBJ_SIZE / 2.5, OBJ_SIZE, 32);
+    geo.rotateX(Math.PI / 2);
   } else {
     geo = new THREE.BoxGeometry(OBJ_SIZE, OBJ_SIZE, OBJ_SIZE);
   }
   const mesh = new THREE.Mesh(geo, objMat.clone());
   mesh.userData.shape = shape;
   mesh.userData.type  = 'obj';
+
+  if (shape === 'sphere') {
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(OBJ_SIZE * 0.045, 16, 16),
+      markerMat
+    );
+    marker.position.set(OBJ_SIZE * 0.12, 0, OBJ_SIZE * 0.20);
+    mesh.add(marker);
+  } else if (shape === 'cylinder') {
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(OBJ_SIZE * 0.28, OBJ_SIZE * 0.025, OBJ_SIZE * 0.025),
+      markerMat
+    );
+    stripe.position.set(OBJ_SIZE * 0.08, 0, OBJ_SIZE * 0.505);
+    mesh.add(stripe);
+  }
+
   return mesh;
 }
 

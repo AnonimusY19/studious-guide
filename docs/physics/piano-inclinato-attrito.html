@@ -201,6 +201,23 @@
     .badge-still { background: rgba(21,128,61,0.5);  color: #86efac; }
     .badge-limit { background: rgba(180,83,9,0.5);   color: #fcd34d; }
 
+    /* Timer */
+    #sim-timer {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      color: #fff;
+      pointer-events: none;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+
     /* Hint */
     #hint {
       position: fixed;
@@ -220,6 +237,9 @@
 <body>
 
   <canvas id="sim-canvas"></canvas>
+
+  <!-- Timer centrato in alto -->
+  <div id="sim-timer">00.00</div>
 
   <!-- UI overlay -->
   <div id="ui">
@@ -347,6 +367,38 @@
   </div>
 
   <div id="hint">Trascina per ruotare la camera • Scorri per zoom</div>
+
+  <script>
+    function showRuntimeError(message) {
+      let box = document.getElementById('runtime-error');
+      if (!box) {
+        box = document.createElement('pre');
+        box.id = 'runtime-error';
+        box.style.cssText = [
+          'position:fixed',
+          'right:16px',
+          'bottom:16px',
+          'z-index:20',
+          'max-width:min(560px,calc(100vw - 32px))',
+          'white-space:pre-wrap',
+          'padding:12px 14px',
+          'border-radius:8px',
+          'background:rgba(127,29,29,0.92)',
+          'color:#fff',
+          'font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace'
+        ].join(';');
+        document.body.appendChild(box);
+      }
+      box.textContent = String(message || 'Errore JavaScript sconosciuto');
+    }
+
+    window.addEventListener('error', event => {
+      showRuntimeError(event.message || event.error?.message);
+    });
+    window.addEventListener('unhandledrejection', event => {
+      showRuntimeError(event.reason?.stack || event.reason?.message || event.reason);
+    });
+  </script>
 
   <script type="module" src="js/main.js"></script>
 

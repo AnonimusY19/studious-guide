@@ -35,6 +35,7 @@ export function updateForceDisplay(physics) {
     limit: ['Equilibrio limite', 'badge badge-limit'],
     slide: ['Scivola ↓',         'badge badge-slide'],
     still: ['Fermo ✓',           'badge badge-still'],
+    roll:  ['Rotola',            'badge badge-limit'],
   };
   const [text, cls] = map[status];
   badge.textContent = text;
